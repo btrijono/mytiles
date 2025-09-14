@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peta Tile Viewer - MyTiles</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+        
+        .map-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        #map {
+            height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .control-group h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .coordinates {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+        }
+        
+        .info-panel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-panel h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            #map {
+                height: 400px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Peta Tile Viewer</h1>
+            <p class="description">Menampilkan peta dari tile yang disimpan di repository GitHub. Tile diambil dari: <strong>https://github.com/btrijono/mytiles/tree/main/tiles</strong></p>
+        </header>
+        
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <h3>Kontrol Peta</h3>
+                    <div class="zoom-control">
+                        <label for="zoom-slider">Level Zoom: <span id="zoom-value">5</span></label>
+                        <input type="range" id="zoom-slider" min="0" max="18" value="5">
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button id="reset-view">Reset View</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Koordinat</h3>
+                    <div class="coordinates">
+                        Latitude: <span id="lat">0</span><br>
+                        Longitude: <span id="lng">0</span><br>
+                        Zoom: <span id="zoom-level">5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h2>Informasi Tile</h2>
+            <p>Tile ini dihosting di GitHub Pages dan dapat diakses melalui aplikasi MyTiles di Android dengan menggunakan URL berikut:</p>
+            <p><strong>https://btrijono.github.io/mytiles/tiles/{z}/{x}/{y}.png</strong></p>
+            <p>Pastikan untuk mengganti {z}, {x}, dan {y} dengan nilai zoom level, koordinat x, dan koordinat y yang sesuai.</p>
+        </div>
+        
+        <footer>
+            <p>Dibuat dengan ❤️ menggunakan Leaflet.js | Tile source: <a href="https://github.com/btrijono/mytiles/tree/main/tiles" target="_blank">btrijono/mytiles</a></p>
+        </footer>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inisialisasi peta dengan view Indonesia
+            const map = L.map('map').setView([-2.5489, 118.0149], 5);
+            
+            // Tambahkan tile layer dari GitHub
+            const githubTileLayer = L.tileLayer('https://btrijono.github.io/mytiles/tiles/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                minZoom: 0,
+                attribution: 'Peta dari <a href="https://github.com/btrijono/mytiles">btrijono/mytiles</a>'
+            }).addTo(map);
+            
+            // Tambahkan penanda pada peta
+            const marker = L.marker([-6.2088, 106.8456]).addTo(map)
+                .bindPopup('Jakarta, Indonesia')
+                .openPopup();
+                
+            // Tambahkan circle untuk area tertentu
+            const circle = L.circle([-7.2575, 112.7521], {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.2,
+                radius: 50000
+            }).addTo(map).bindPopup('Area Surabaya');
+            
+            // Kontrol zoom slider
+            const zoomSlider = document.getElementById('zoom-slider');
+            const zoomValue = document.getElementById('zoom-value');
+            const zoomLevel = document.getElementById('zoom-level');
+            
+            zoomSlider.addEventListener('input', function() {
+                const zoom = parseInt(this.value);
+                zoomValue.textContent = zoom;
+                map.setZoom(zoom);
+            });
+            
+            // Update zoom slider ketika zoom peta berubah
+            map.on('zoomend', function() {
+                const zoom = map.getZoom();
+                zoomSlider.value = zoom;
+                zoomValue.textContent = zoom;
+                zoomLevel.textContent = zoom;
+            });
+            
+            // Update koordinat ketika mouse bergerak di peta
+            map.on('mousemove', function(e) {
+                document.getElementById('lat').textContent = e.latlng.lat.toFixed(4);
+                document.getElementById('lng').textContent = e.latlng.lng.toFixed(4);
+            });
+            
+            // Reset view button
+            document.getElementById('reset-view').addEventListener('click', function() {
+                map.setView([-2.5489, 118.0149], 5);
+            });
+            
+            // Tambahkan kontrol layer
+            L.control.layers({
+                "Tile GitHub": githubTileLayer
+            }).addTo(map);
+            
+            // Tambahkan skala
+            L.control.scale({imperial: false}).addTo(map);
+        });
+    </script>
+</body>
+</html>
